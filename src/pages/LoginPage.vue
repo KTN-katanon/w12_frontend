@@ -47,8 +47,8 @@ const authStore = useAuthStore()
 const userStore = useUserStore()
 const route = useRoute()
 const router = useRouter()
-function onSubmit() {
-  if (authStore.login(email.value, password.value)) {
+async function onSubmit() {
+  if (await authStore.login(email.value, password.value)) {
     $q.notify({
       color: 'green-4',
       textColor: 'white',
