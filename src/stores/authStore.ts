@@ -1,9 +1,9 @@
 import { defineStore, acceptHMRUpdate } from 'pinia'
 import { computed, ref } from 'vue'
-import { useUserStore } from './userStore'
 import { type User } from 'src/models'
 import { useRouter } from 'vue-router'
-import { useQuasar } from 'quasar'
+import { Loading, Notify, useQuasar } from 'quasar'
+import { api } from 'src/boot/axios'
 
 export const useAuthStore = defineStore('auth', () => {
   const router = useRouter()
@@ -12,34 +12,52 @@ export const useAuthStore = defineStore('auth', () => {
     return user.value !== null
   })
   const user = ref<User | null>(null)
-  const userStore = useUserStore()
+  const token = ref<string | null>(null)
 
   function saveUserToStorage() {
     // localStorage.setItem('user', JSON.stringify(user.value))
     $q.localStorage.setItem('user', user.value)
+    $q.localStorage.setItem('token', token.value)
   }
   function loadUserFromStorage() {
     user.value = $q.localStorage.getItem('user')
+    token.value = $q.localStorage.getItem('token')
   }
   function clearUserFromStroage() {
     $q.localStorage.removeItem('user')
+    $q.localStorage.remove('token')
   }
-  function login(email: string, password: string): boolean {
-    const u = userStore.getUserByEmail(email)
-    if (u && u.password === password) {
-      user.value = { ...u, password: '' }
+  async function login(email: string, password: string): Promise<boolean> {
+    try {
+      Loading.show()
+      const res = await api.post('/auth/login', { login: email, password: password })
+      user.value = res.data.user
+      token.value = res.data.access_token
       saveUserToStorage()
       return true
+    } catch (err) {
+      console.error(err)
+      Notify.create({
+        color: 'negative',
+        position: 'top',
+        message: 'Add failed',
+        icon: 'report_problem'
+      })
+      return false
+    } finally {
+      console.log('finally')
+      Loading.hide()
     }
-    return false
   }
+
   function logout() {
     router.replace({ path: '/login' })
     clearUserFromStroage()
     user.value = null
+    token.value = null
   }
   loadUserFromStorage()
-  return { login, isLogin, logout, user }
+  return { login, isLogin, logout, user, token }
 })
 
 if (import.meta.hot) {
