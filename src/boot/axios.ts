@@ -1,5 +1,6 @@
 import { defineBoot } from '#q-app/wrappers';
 import axios, { type AxiosInstance } from 'axios';
+import { useAuthStore } from 'src/stores/authStore';
 
 
 declare module 'vue' {
@@ -20,6 +21,10 @@ const api = axios.create({ baseURL: 'http://localhost:3000' });
 //   return new Promise((resolve) => setTimeout(resolve,ms))
 // }
 api.interceptors.request.use((config) => {
+  const authStore = useAuthStore()
+  if (authStore.token) {
+    config.headers.Authorization = 'Bearer ' + authStore.token
+  }
   console.log('Request was sent')
   return config
 })
